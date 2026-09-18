@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Number Bomb — Landen Liu</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #eef4ff;
+    background:
+      radial-gradient(circle at 78% 35%, rgba(255,100,30,.16), transparent 24%),
+      radial-gradient(circle at 15% 80%, rgba(40,100,255,.18), transparent 28%),
+      linear-gradient(135deg, #071326, #101d37 55%, #160f16);
+    overflow-x: hidden;
+  }
+  .page { width: min(1180px, 94%); margin: auto; padding: 28px 0 34px; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:20px; }
+  .friends {
+    border:1px solid #35598d; background:rgba(11,25,49,.78);
+    border-radius:18px; padding:12px 18px; display:flex; gap:10px; align-items:center;
+  }
+  .friends .icon { font-size:27px; }
+  .friends b { display:block; font-size:16px; }
+  .friends span { color:#aebfdd; font-size:12px; }
+  .toggle { border:1px solid #35598d; background:#162744; border-radius:16px; padding:6px; }
+  .toggle button { border:0; background:transparent; color:#9eb1d0; padding:9px 15px; border-radius:11px; cursor:pointer; }
+  .toggle .active { background:#253c66; color:white; }
+  .hero { text-align:center; padding:25px 0 20px; }
+  .title {
+    margin:0; font-weight:1000; letter-spacing:-4px; line-height:.9;
+    font-size:clamp(54px, 9vw, 105px);
+    color:#fff; text-shadow:5px 6px 0 #080d16, 0 0 28px rgba(255,174,45,.2);
+  }
+  .title em { color:#ffb82e; font-style:normal; display:block; text-shadow:5px 6px 0 #641d0e; }
+  .tagline { display:inline-block; margin-top:17px; padding:10px 22px; border:1px solid #30496d; border-radius:30px; color:#cbd8ee; font-weight:700; }
+  .layout { display:grid; grid-template-columns:260px 1fr 250px; gap:22px; align-items:center; }
+  .card {
+    background:rgba(8,20,37,.82); border:1px solid #304765; border-radius:22px;
+    box-shadow:0 18px 50px rgba(0,0,0,.25);
+  }
+  .rules { padding:20px; }
+  .rules h2 { margin:0 0 16px; font-size:20px; }
+  .rule { display:flex; gap:11px; margin:14px 0; color:#c8d4e7; line-height:1.45; font-size:14px; }
+  .num { flex:0 0 29px; height:29px; display:grid; place-items:center; border-radius:50%; background:#455571; font-weight:800; }
+  .game { padding:28px; text-align:center; }
+  .game h2 { margin:0; font-size:25px; }
+  .range { color:#ffbe3c; font-size:48px; font-weight:900; margin:6px 0 16px; text-shadow:0 3px 15px rgba(255,176,45,.25); }
+  .inputrow { display:flex; gap:12px; }
+  input {
+    min-width:0; flex:1; padding:17px 18px; border-radius:14px; border:1px solid #afbdd0;
+    font-size:18px; outline:none; background:#f5f8fc; color:#172238;
+  }
+  input:focus { box-shadow:0 0 0 4px rgba(77,153,255,.2); }
+  .guess, .again {
+    border:0; border-radius:14px; padding:0 25px; font-weight:900; font-size:17px; cursor:pointer;
+  }
+  .guess { background:#f04b3e; color:white; box-shadow:0 6px 0 #9f241d; }
+  .guess:active { transform:translateY(3px); box-shadow:0 3px 0 #9f241d; }
+  .message { min-height:54px; margin-top:18px; padding:14px; display:flex; align-items:center; text-align:left; border:1px solid #263d59; border-radius:14px; background:#0e2033; color:#c7d6e9; }
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px; }
+  .stat { padding:14px; border:1px solid #23436d; border-radius:14px; text-align:left; }
+  .stat small { color:#8ea7c9; display:block; }
+  .stat strong { font-size:25px; color:#57a7ff; }
+  .stat:last-child strong { color:#71df8a; }
+  .bombbox { display:flex; justify-content:center; align-items:center; min-height:330px; position:relative; }
+  .bomb {
+    width:180px; height:180px; border-radius:50%; position:relative;
+    background:radial-gradient(circle at 34% 28%, #5a5e69 0 6%, #252a34 17%, #080b11 72%);
+    box-shadow:inset -18px -15px 25px #000, 0 25px 35px rgba(0,0,0,.5);
+    animation:float 3s ease-in-out infinite;
+  }
+  .bomb:before { content:""; position:absolute; width:64px; height:28px; top:-17px; left:58px; border-radius:8px; background:#303642; transform:rotate(8deg); }
+  .fuse { position:absolute; width:56px; height:8px; background:#bd7932; top:-30px; left:91px; transform:rotate(-35deg); border-radius:10px; }
+  .spark { position:absolute; top:-52px; left:137px; font-size:34px; animation:spark 0.65s infinite alternate; }
+  .eye { position:absolute; width:39px; height:28px; background:#eee; border-radius:50%; top:67px; }
+  .eye.left { left:42px; transform:rotate(20deg); } .eye.right { right:42px; transform:rotate(-20deg); }
+  .pupil { width:12px; height:18px; background:#151922; border-radius:50%; margin:5px auto; }
+  .mouth { position:absolute; left:63px; top:111px; width:55px; height:24px; border-bottom:8px solid #080a0e; border-radius:50%; }
+  .again { margin-top:18px; padding:12px 20px; background:#315f9e; color:white; display:none; }
+  .overlay {
+    position:fixed; inset:0; z-index:1000; pointer-events:auto; display:none; place-items:center;
+    background:rgba(2,7,17,.78); backdrop-filter:blur(8px);
+  }
+  .overlay.show { display:grid; }
+  .gameover {
+    position:relative; z-index:1001; pointer-events:auto; width:min(480px,90%); padding:38px 28px; text-align:center; border-radius:28px;
+    background:linear-gradient(145deg,#111c31,#241218); border:2px solid #ff633e;
+    box-shadow:0 0 70px rgba(255,76,35,.35), 0 25px 80px rgba(0,0,0,.55);
+    animation:pop .35s ease-out;
+  }
+  .boom { font-size:76px; line-height:1; animation:boom .55s ease-out; }
+  .gameover h2 {
+    margin:12px 0 4px; font-size:clamp(40px,8vw,66px); font-weight:1000;
+    color:#ffbf38; text-shadow:4px 4px 0 #762316;
+  }
+  .gameover p { margin:8px 0 24px; color:#c9d4e8; font-size:17px; }
+  .modal-buttons { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .modal-buttons { position:relative; z-index:1002; pointer-events:auto; }
+  .modal-buttons button {
+    position:relative; z-index:201; border:0; border-radius:13px; padding:13px 22px;
+    font-weight:900; font-size:16px; cursor:pointer; pointer-events:auto;
+  }
+  #modalAgain { background:#f04b3e; color:white; }
+  #closeGame { background:#334766; color:white; }
+  .explosion {
+    position:fixed; left:50%; top:50%; z-index:90; pointer-events:none;
+    width:20px; height:20px; border-radius:50%; opacity:0;
+    transform:translate(-50%,-50%) scale(.2);
+  }
+  .explosion.active { animation:explode .75s ease-out forwards; }
+  @keyframes explode {
+    0% { opacity:1; transform:translate(-50%,-50%) scale(.2); box-shadow:0 0 0 0 #ffdf55,0 0 0 0 #ff6b2b; }
+    35% { opacity:1; transform:translate(-50%,-50%) scale(5); box-shadow:0 0 0 45px #ffdf55,0 0 0 80px #ff6b2b,0 0 0 120px rgba(255,55,25,.55); }
+    100% { opacity:0; transform:translate(-50%,-50%) scale(10); box-shadow:0 0 0 90px transparent,0 0 0 150px transparent,0 0 0 210px transparent; }
+  }
+  @keyframes boom { 0%{transform:scale(.3) rotate(-12deg);opacity:0} 55%{transform:scale(1.2) rotate(5deg);opacity:1} 100%{transform:scale(1)} }
+  @keyframes pop { from{transform:scale(.75);opacity:0} to{transform:scale(1);opacity:1} }
+  footer { text-align:center; color:#8da2c1; margin-top:22px; font-size:13px; }
+  body.light { color:#172238; background:linear-gradient(135deg,#eaf2ff,#f8efe7); }
+  body.light .card, body.light .friends { background:rgba(255,255,255,.85); border-color:#bfd0e6; }
+  body.light .message { background:#edf4fc; color:#34455f; }
+  body.light .tagline { color:#34455f; }
+  @keyframes float { 50% { transform:translateY(-8px) rotate(1deg); } }
+  @keyframes spark { to { transform:scale(1.2) rotate(8deg); } }
+  @media (max-width:900px) {
+    .layout { grid-template-columns:1fr; }
+    .rules { order:2; } .bombbox { order:3; min-height:220px; }
+    .inputrow { flex-direction:column; } .guess { padding:15px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="friends"><div class="icon">👥</div><div><b>Play with Friends!</b><span>Take turns and see who blows up the bomb.</span></div></div>
+    <div class="toggle"><button id="lightBtn">☀ Light</button><button id="darkBtn" class="active">◐ Dark</button></div>
+  </header>
+
+  <section class="hero">
+    <h1 class="title">NUMBER<em>BOMB</em></h1>
+    <div class="tagline">Guess the number... or blow up the bomb!</div>
+  </section>
+
+  <main class="layout">
+    <aside class="card rules">
+      <h2>🎯 Game Rules</h2>
+      <div class="rule"><span class="num">1</span><span>A random number between 1 and 100 is chosen.</span></div>
+      <div class="rule"><span class="num">2</span><span>Enter your guess.</span></div>
+      <div class="rule"><span class="num">3</span><span>You will get a hint with the new range.</span></div>
+      <div class="rule"><span class="num">4</span><span>Keep guessing until you hit the number.</span></div>
+      <div class="rule"><span class="num">5</span><span>Then... the bomb explodes!</span></div>
+    </aside>
+
+    <section class="card game">
+      <h2>Guess a number between</h2>
+      <div class="range" id="range">1 ~ 100</div>
+      <div class="inputrow">
+        <input id="guessInput" type="number" min="1" max="100" placeholder="Enter your guess..." autofocus>
+        <button class="guess" id="guessBtn">Guess</button>
+      </div>
+      <div class="message" id="message">💡 &nbsp; Start guessing!</div>
+      <div class="stats">
+        <div class="stat"><small>Current Range</small><strong id="statsRange">1 ~ 100</strong></div>
+        <div class="stat"><small>Total Guesses</small><strong id="count">0</strong></div>
+      </div>
+      <button class="again" id="againBtn">🔄 Play Again</button>
+    </section>
+
+    <div class="bombbox"><div class="bomb" id="bomb"><div class="fuse"></div><div class="spark">✨</div><div class="eye left"><div class="pupil"></div></div><div class="eye right"><div class="pupil"></div></div><div class="mouth"></div></div></div>
+  </main>
+
+  <footer>🎮 Game Creator: Landen Liu</footer>
+</div>
+
+<div class="explosion" id="explosion"></div>
+<div class="overlay" id="overlay">
+  <div class="gameover">
+    <div class="boom">💥</div>
+    <h2>GAME OVER</h2>
+    <p>BOOM! The Number Bomb exploded!<br>You found the bomb in <b id="finalCount">0</b> guesses.</p>
+    <div class="modal-buttons">
+      <button id="modalAgain">🔄 Play Again</button>
+      <button id="closeGame">✕ Close the Game</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let answer, min, max, count;
+
+const input = document.getElementById("guessInput");
+const message = document.getElementById("message");
+const range = document.getElementById("range");
+const statsRange = document.getElementById("statsRange");
+const countEl = document.getElementById("count");
+const guessBtn = document.getElementById("guessBtn");
+const againBtn = document.getElementById("againBtn");
+const bomb = document.getElementById("bomb");
+const overlay = document.getElementById("overlay");
+const explosion = document.getElementById("explosion");
+const finalCount = document.getElementById("finalCount");
+const modalAgain = document.getElementById("modalAgain");
+const closeGame = document.getElementById("closeGame");
+
+function update() {
+  range.textContent = min + " ~ " + max;
+  statsRange.textContent = min + " ~ " + max;
+  countEl.textContent = count;
+}
+
+function startGame() {
+  answer = Math.floor(Math.random() * 100) + 1;
+  min = 1;
+  max = 100;
+  count = 0;
+
+  overlay.classList.remove("show");
+  explosion.classList.remove("active");
+  input.disabled = false;
+  guessBtn.disabled = false;
+  input.value = "";
+  againBtn.style.display = "none";
+  bomb.style.animation = "float 3s ease-in-out infinite";
+
+  update();
+  message.innerHTML = "💡 &nbsp; Start guessing!";
+  input.focus();
+}
+
+function guess() {
+  const n = Number(input.value);
+
+  if (!Number.isInteger(n) || n < min || n > max) {
+    message.innerHTML = "⚠️ &nbsp; Please enter a whole number between " + min + " and " + max + ".";
+    return;
+  }
+
+  count++;
+
+  if (n < answer) {
+    min = n + 1;
+    message.innerHTML = "⬆️ &nbsp; Too low! The Number Bomb is between <b>" + min + " ~ " + max + "</b>.";
+  } else if (n > answer) {
+    max = n - 1;
+    message.innerHTML = "⬇️ &nbsp; Too high! The Number Bomb is between <b>" + min + " ~ " + max + "</b>.";
+  } else {
+    message.innerHTML = "💥 &nbsp; <b>BOOM!!!</b> You found the Number Bomb in " + count + " guesses!";
+    input.disabled = true;
+    guessBtn.disabled = true;
+    finalCount.textContent = count;
+    bomb.style.animation = "float .35s infinite, spark .25s infinite";
+
+    explosion.classList.remove("active");
+    void explosion.offsetWidth;
+    explosion.classList.add("active");
+
+    setTimeout(function() {
+      overlay.classList.add("show");
+    }, 550);
+  }
+
+  update();
+  input.select();
+}
+
+guessBtn.onclick = guess;
+input.onkeydown = function(e) {
+  if (e.key === "Enter") guess();
+};
+
+/* This is the Play Again button: one click = completely new game. */
+modalAgain.onclick = function() {
+  startGame();
+};
+
+closeGame.onclick = function() {
+  overlay.classList.remove("show");
+  document.querySelector(".page").style.display = "none";
+  document.body.innerHTML =
+    '<div style="min-height:100vh;display:grid;place-items:center;background:#071326;color:white;font-family:system-ui;text-align:center;padding:30px">' +
+    '<div><div style="font-size:64px">🎮</div><h1>Game Closed</h1><p>Thanks for playing Number Bomb!</p></div></div>';
+};
+
+againBtn.onclick = startGame;
+
+document.getElementById("lightBtn").onclick = function() {
+  document.body.classList.add("light");
+  document.getElementById("lightBtn").classList.add("active");
+  document.getElementById("darkBtn").classList.remove("active");
+};
+
+document.getElementById("darkBtn").onclick = function() {
+  document.body.classList.remove("light");
+  document.getElementById("darkBtn").classList.add("active");
+  document.getElementById("lightBtn").classList.remove("active");
+};
+
+startGame();
+</script>
+</body>
+</html>
